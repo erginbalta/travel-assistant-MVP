@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, MapPin, Calendar, DollarSign, Users } from 'lucide-react-native';
+import { ArrowLeft, MapPin, Calendar, DollarSign, Users, ChevronDown } from 'lucide-react-native';
 
 export default function TripPlanningScreen() {
   const colorScheme = useColorScheme();
@@ -31,6 +31,7 @@ export default function TripPlanningScreen() {
   const [days, setDays] = useState('');
   const [budget, setBudget] = useState('');
   const [selectedTripType, setSelectedTripType] = useState('');
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
 
   const countries = ['Türkiye', 'Fransa', 'İtalya', 'İspanya', 'Yunanistan'];
   const cities = {
@@ -78,28 +79,51 @@ export default function TripPlanningScreen() {
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             Ülke Seçin
           </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {countries.map((country) => (
-              <TouchableOpacity
-                key={country}
-                style={[
-                  styles.optionChip,
-                  { backgroundColor: selectedCountry === country ? colors.primary : colors.surface }
-                ]}
-                onPress={() => {
-                  setSelectedCountry(country);
-                  setSelectedCity('');
-                }}
-              >
-                <Text style={[
-                  styles.optionText,
-                  { color: selectedCountry === country ? 'white' : colors.text }
-                ]}>
-                  {country}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          <TouchableOpacity
+            style={[styles.dropdownButton, { backgroundColor: colors.cardBackground, borderColor: colors.surface }]}
+            onPress={() => setShowCountryDropdown(!showCountryDropdown)}
+          >
+            <Text style={[
+              styles.dropdownButtonText,
+              { color: selectedCountry ? colors.text : colors.secondaryText }
+            ]}>
+              {selectedCountry || 'Ülke seçin'}
+            </Text>
+            <ChevronDown 
+              size={20} 
+              color={colors.secondaryText}
+              style={[
+                styles.dropdownIcon,
+                showCountryDropdown && styles.dropdownIconRotated
+              ]}
+            />
+          </TouchableOpacity>
+          
+          {showCountryDropdown && (
+            <View style={[styles.dropdown, { backgroundColor: colors.cardBackground, borderColor: colors.surface }]}>
+              {countries.map((country) => (
+                <TouchableOpacity
+                  key={country}
+                  style={[
+                    styles.dropdownOption,
+                    selectedCountry === country && { backgroundColor: colors.primary }
+                  ]}
+                  onPress={() => {
+                    setSelectedCountry(country);
+                    setSelectedCity('');
+                    setShowCountryDropdown(false);
+                  }}
+                >
+                  <Text style={[
+                    styles.dropdownOptionText,
+                    { color: selectedCountry === country ? 'white' : colors.text }
+                  ]}>
+                    {country}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
 
         {/* City Selection */}
@@ -282,6 +306,49 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   optionText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  dropdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  dropdownButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  dropdownIcon: {
+    transform: [{ rotate: '0deg' }],
+  },
+  dropdownIconRotated: {
+    transform: [{ rotate: '180deg' }],
+  },
+  dropdown: {
+    marginTop: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+    overflow: 'hidden',
+  },
+  dropdownOption: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  dropdownOptionText: {
     fontSize: 16,
     fontWeight: '500',
   },

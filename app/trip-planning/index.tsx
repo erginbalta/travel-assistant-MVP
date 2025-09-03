@@ -133,7 +133,7 @@ export default function TripPlanningScreen() {
               Şehir Seçin
             </Text>
             <View style={styles.optionGrid}>
-              {cities[selectedCountry]?.map((city) => (
+              {cities[selectedCountry as keyof typeof cities]?.map((city) => (
                 <TouchableOpacity
                   key={city}
                   style={[

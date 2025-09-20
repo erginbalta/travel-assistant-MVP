@@ -7,10 +7,11 @@ import {
   useColorScheme,
   ScrollView,
   TextInput,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, MapPin, Calendar, DollarSign, Users, ChevronDown } from 'lucide-react-native';
+import { ArrowLeft, MapPin, Calendar, DollarSign, Users, ChevronDown, Check, X } from 'lucide-react-native';
 
 export default function TripPlanningScreen() {
   const colorScheme = useColorScheme();
@@ -28,10 +29,13 @@ export default function TripPlanningScreen() {
 
   const [selectedCountry, setSelectedCountry] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
-  const [days, setDays] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [days, setDays] = useState(0);
   const [budget, setBudget] = useState('');
-  const [selectedTripType, setSelectedTripType] = useState('');
+  const [selectedTripTypes, setSelectedTripTypes] = useState<string[]>([]);
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
 
   const countries = ['Türkiye', 'Fransa', 'İtalya', 'İspanya', 'Yunanistan'];
   const cities = {
@@ -57,7 +61,66 @@ export default function TripPlanningScreen() {
     '₺10,000+',
   ];
 
-  const canCreateTrip = selectedCountry && selectedCity && days && budget && selectedTripType;
+  const toggleTripType = (typeId: string) => {
+    setSelectedTripTypes(prev => {
+      if (prev.includes(typeId)) {
+        return prev.filter(id => id !== typeId);
+      } else {
+        return [...prev, typeId];
+      }
+    });
+  };
+
+  const generateCalendarDays = () => {
+    const today = new Date();
+    const days = [];
+    
+    for (let i = 0; i < 30; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      days.push(date);
+    }
+    
+    return days;
+  };
+
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('tr-TR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  const calculateDays = (start: Date, end: Date) => {
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    return diffDays;
+  };
+
+  const handleDateSelect = (date: Date) => {
+    if (!startDate) {
+      setStartDate(formatDate(date));
+      setEndDate('');
+      setDays(1);
+    } else if (!endDate) {
+      const start = new Date(startDate.split('.').reverse().join('-'));
+      if (date >= start) {
+        setEndDate(formatDate(date));
+        setDays(calculateDays(start, date));
+      } else {
+        setStartDate(formatDate(date));
+        setEndDate('');
+        setDays(1);
+      }
+    } else {
+      setStartDate(formatDate(date));
+      setEndDate('');
+      setDays(1);
+    }
+  };
+
+  const canCreateTrip = selectedCountry && selectedCity && days > 0 && budget && selectedTripTypes.length > 0;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -161,19 +224,25 @@ export default function TripPlanningScreen() {
         {/* Days */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Kaç Gün?
+            Tarih Seçin
           </Text>
-          <View style={[styles.inputContainer, { backgroundColor: colors.cardBackground }]}>
+          <TouchableOpacity 
+            style={[styles.inputContainer, { backgroundColor: colors.cardBackground }]}
+            onPress={() => setShowCalendar(true)}
+          >
             <Calendar size={20} color={colors.primary} />
-            <TextInput
-              style={[styles.textInput, { color: colors.text }]}
-              placeholder="Gün sayısını girin"
-              placeholderTextColor={colors.secondaryText}
-              value={days}
-              onChangeText={setDays}
-              keyboardType="numeric"
-            />
-          </View>
+            <Text style={[
+              styles.textInput, 
+              { color: startDate ? colors.text : colors.secondaryText }
+            ]}>
+              {startDate && endDate 
+                ? `${startDate} - ${endDate} (${days} gün)`
+                : startDate 
+                  ? `${startDate} - Bitiş tarihi seçin`
+                  : 'Başlangıç tarihi seçin'
+              }
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Budget */}
@@ -209,7 +278,7 @@ export default function TripPlanningScreen() {
         {/* Trip Type */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Tur Tipi
+            Tur Tipleri (Çoklu seçim yapabilirsiniz)
           </Text>
           <View style={styles.tripTypeGrid}>
             {tripTypes.map((type) => (
@@ -218,16 +287,21 @@ export default function TripPlanningScreen() {
                 style={[
                   styles.tripTypeOption,
                   { 
-                    backgroundColor: selectedTripType === type.id ? colors.primary : colors.cardBackground,
+                    backgroundColor: selectedTripTypes.includes(type.id) ? colors.primary : colors.cardBackground,
                     borderColor: colors.surface,
                   }
                 ]}
-                onPress={() => setSelectedTripType(type.id)}
+                onPress={() => toggleTripType(type.id)}
               >
+                {selectedTripTypes.includes(type.id) && (
+                  <View style={styles.checkIcon}>
+                    <Check size={16} color="white" />
+                  </View>
+                )}
                 <Text style={styles.tripEmoji}>{type.emoji}</Text>
                 <Text style={[
                   styles.tripTypeText,
-                  { color: selectedTripType === type.id ? 'white' : colors.text }
+                  { color: selectedTripTypes.includes(type.id) ? 'white' : colors.text }
                 ]}>
                   {type.title}
                 </Text>
@@ -236,6 +310,70 @@ export default function TripPlanningScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Calendar Modal */}
+      <Modal
+        visible={showCalendar}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <SafeAreaView style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+          <View style={styles.modalHeader}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>
+              Tarih Seçin
+            </Text>
+            <TouchableOpacity 
+              style={styles.closeButton}
+              onPress={() => setShowCalendar(false)}
+            >
+              <X size={24} color={colors.text} />
+            </TouchableOpacity>
+          </View>
+          
+          <ScrollView style={styles.calendarContainer}>
+            <View style={styles.calendarGrid}>
+              {generateCalendarDays().map((date, index) => {
+                const dateStr = formatDate(date);
+                const isSelected = dateStr === startDate || dateStr === endDate;
+                const isInRange = startDate && endDate && 
+                  date >= new Date(startDate.split('.').reverse().join('-')) && 
+                  date <= new Date(endDate.split('.').reverse().join('-'));
+                
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      styles.calendarDay,
+                      { 
+                        backgroundColor: isSelected 
+                          ? colors.primary 
+                          : isInRange 
+                            ? colors.surface 
+                            : colors.cardBackground,
+                        borderColor: colors.surface,
+                      }
+                    ]}
+                    onPress={() => handleDateSelect(date)}
+                  >
+                    <Text style={[
+                      styles.calendarDayText,
+                      { color: isSelected ? 'white' : colors.text }
+                    ]}>
+                      {date.getDate()}
+                    </Text>
+                    <Text style={[
+                      styles.calendarMonthText,
+                      { color: isSelected ? 'white' : colors.secondaryText }
+                    ]}>
+                      {date.toLocaleDateString('tr-TR', { month: 'short' })}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
 
       {/* Create Trip Button */}
       <View style={styles.bottomContainer}>
@@ -421,11 +559,23 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     minWidth: 110,
+    position: 'relative',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 3,
+  },
+  checkIcon: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   tripEmoji: {
     fontSize: 24,
@@ -454,5 +604,53 @@ const styles = StyleSheet.create({
   createButtonText: {
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  modalContainer: {
+    flex: 1,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E7',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  closeButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  calendarContainer: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  calendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    paddingVertical: 20,
+  },
+  calendarDay: {
+    width: '13%',
+    aspectRatio: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  calendarDayText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  calendarMonthText: {
+    fontSize: 10,
+    marginTop: 2,
   },
 });

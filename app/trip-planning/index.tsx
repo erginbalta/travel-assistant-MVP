@@ -372,6 +372,32 @@ export default function TripPlanningScreen() {
               })}
             </View>
           </ScrollView>
+          
+          {/* Confirm Button */}
+          <View style={styles.modalFooter}>
+            <TouchableOpacity
+              style={[
+                styles.confirmButton,
+                { 
+                  backgroundColor: startDate && endDate ? colors.primary : colors.surface,
+                  opacity: startDate && endDate ? 1 : 0.5,
+                }
+              ]}
+              onPress={() => {
+                if (startDate && endDate) {
+                  setShowCalendar(false);
+                }
+              }}
+              disabled={!startDate || !endDate}
+            >
+              <Text style={[
+                styles.confirmButtonText,
+                { color: startDate && endDate ? 'white' : colors.secondaryText }
+              ]}>
+                Tamam
+              </Text>
+            </TouchableOpacity>
+          </View>
         </SafeAreaView>
       </Modal>
 
@@ -652,5 +678,24 @@ const styles = StyleSheet.create({
   calendarMonthText: {
     fontSize: 10,
     marginTop: 2,
+  },
+  modalFooter: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingBottom: 34,
+  },
+  confirmButton: {
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  confirmButtonText: {
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });
